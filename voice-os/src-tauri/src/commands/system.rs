@@ -1,6 +1,3 @@
-use base64::{engine::general_purpose, Engine as _};
-use screenshots::{image::ImageFormat, Screen};
-use std::io::Cursor;
 use std::process::Command;
 
 #[tauri::command]
@@ -55,26 +52,4 @@ pub fn open_folder(path: String) -> Result<String, String> {
     }
     open::that(&expanded_path).map_err(|e| format!("ไม่สามารถเปิดโฟลเดอร์ได้: {}", e))?;
     Ok(format!("เปิดโฟลเดอร์: {}", expanded_path))
-}
-
-#[tauri::command]
-pub fn take_screenshot() -> Result<String, String> {
-    let screens = Screen::all().map_err(|e| format!("ไม่สามารถดึงข้อมูลหน้าจอได้: {}", e))?;
-    if screens.is_empty() {
-        return Err("ไม่พบหน้าจอที่แสดงผล".into());
-    }
-
-    let primary_screen = screens[0];
-    let image = primary_screen
-        .capture()
-        .map_err(|e| format!("เกิดข้อผิดพลาดในการถ่ายภาพหน้าจอ: {}", e))?;
-
-    let mut bytes = Vec::new();
-    image
-        .write_to(&mut Cursor::new(&mut bytes), ImageFormat::Png)
-        .map_err(|e| format!("ไม่สามารถเข้ารหัสภาพ PNG ได้: {}", e))?;
-
-    let base64_str = general_purpose::STANDARD.encode(&bytes);
-
-    Ok(base64_str)
 }

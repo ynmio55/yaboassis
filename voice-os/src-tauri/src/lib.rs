@@ -2,8 +2,8 @@ mod commands;
 
 use commands::{
     keyboard::{execute_keyboard_shortcut, type_text},
-    mouse::{click_mouse, move_mouse, scroll_mouse},
-    system::{launch_application, open_folder, take_screenshot},
+    mouse::{click_mouse, scroll_mouse},
+    system::{launch_application, open_folder},
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -22,12 +22,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             execute_keyboard_shortcut,
             type_text,
-            move_mouse,
             click_mouse,
             scroll_mouse,
             launch_application,
-            open_folder,
-            take_screenshot
+            open_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

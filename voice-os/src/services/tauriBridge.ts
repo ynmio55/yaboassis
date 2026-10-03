@@ -8,7 +8,6 @@ export const isTauriAvailable = (): boolean => {
 
 export const executeKeyboardShortcut = async (keys: string[]): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
-    console.log('[Browser Mock] executeKeyboardShortcut:', keys);
     return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: กดปุ่ม: ${keys.join(' + ')}` };
   }
   try {
@@ -21,7 +20,6 @@ export const executeKeyboardShortcut = async (keys: string[]): Promise<Execution
 
 export const typeText = async (text: string): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
-    console.log('[Browser Mock] typeText:', text);
     return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: พิมพ์ข้อความ: "${text}"` };
   }
   try {
@@ -32,22 +30,8 @@ export const typeText = async (text: string): Promise<ExecutionResult> => {
   }
 };
 
-export const moveMouse = async (x: number, y: number): Promise<ExecutionResult> => {
-  if (!isTauriAvailable()) {
-    console.log('[Browser Mock] moveMouse:', x, y);
-    return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: ย้ายเมาส์ไปที่ X: ${x}, Y: ${y}` };
-  }
-  try {
-    const res = await invoke<string>('move_mouse', { x, y });
-    return { success: true, message: res };
-  } catch (err: any) {
-    return { success: false, message: err?.toString() || 'เกิดข้อผิดพลาดในการย้ายเมาส์' };
-  }
-};
-
 export const clickMouse = async (button: string = 'left'): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
-    console.log('[Browser Mock] clickMouse:', button);
     return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: คลิกเมาส์ (${button})` };
   }
   try {
@@ -60,7 +44,6 @@ export const clickMouse = async (button: string = 'left'): Promise<ExecutionResu
 
 export const scrollMouse = async (direction: string = 'down', amount: number = 5): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
-    console.log('[Browser Mock] scrollMouse:', direction, amount);
     return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: เลื่อนหน้าจอ ${direction} (${amount})` };
   }
   try {
@@ -73,7 +56,6 @@ export const scrollMouse = async (direction: string = 'down', amount: number = 5
 
 export const launchApplication = async (command: string): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
-    console.log('[Browser Mock] launchApplication:', command);
     return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: เปิดแอปพลิเคชัน: ${command}` };
   }
   try {
@@ -86,7 +68,6 @@ export const launchApplication = async (command: string): Promise<ExecutionResul
 
 export const openFolder = async (path: string): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
-    console.log('[Browser Mock] openFolder:', path);
     return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: เปิดโฟลเดอร์: ${path}` };
   }
   try {
@@ -94,18 +75,5 @@ export const openFolder = async (path: string): Promise<ExecutionResult> => {
     return { success: true, message: res };
   } catch (err: any) {
     return { success: false, message: err?.toString() || 'เกิดข้อผิดพลาดในการเปิดโฟลเดอร์' };
-  }
-};
-
-export const takeScreenshot = async (): Promise<string> => {
-  if (!isTauriAvailable()) {
-    console.log('[Browser Mock] takeScreenshot requested');
-    throw new Error('ภาพหน้าจอต้องใช้แอปเดสก์ท็อป');
-  }
-  try {
-    const base64Image = await invoke<string>('take_screenshot');
-    return base64Image;
-  } catch (err: any) {
-    throw new Error(err?.toString() || 'ไม่สามารถถ่ายภาพหน้าจอได้');
   }
 };

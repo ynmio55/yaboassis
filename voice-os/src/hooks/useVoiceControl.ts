@@ -1,13 +1,12 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useCommandStore } from '../store/useCommandStore';
-import { parseSpeechToIntent, locateVisualTarget } from '../services/aiEngine';
+import { parseSpeechToIntent } from '../services/aiEngine';
 import { speakThai } from '../services/ttsService';
 
 import {
   executeKeyboardShortcut,
   typeText,
-  moveMouse,
   clickMouse,
   scrollMouse,
   launchApplication,
@@ -35,6 +34,9 @@ export function useVoiceControl() {
     resetState,
   } = useCommandStore();
 
+  const [isListening, setIsListening] = useState(false);
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
   const busyRef = useRef(false);
   const generationRef = useRef(0);
   const recognitionRef = useRef<any>(null);
@@ -45,7 +47,7 @@ export function useVoiceControl() {
     async (intent: CommandIntent) => {
       setStatus('executing', `กำลังดำเนินการ: ${intent.rawSpeech}`);
       const generation = generationRef.current;
-      if (['keyboard_shortcut', 'type_text', 'move_mouse', 'click_mouse', 'scroll'].includes(intent.intent)) {
+      if (['keyboard_shortcut', 'type_text', 'click_mouse', 'scroll'].includes(intent.intent)) {
         setStatus('executing', 'สลับไปหน้าต่างเป้าหมายภายใน 3 วินาที — Esc เพื่อยกเลิก');
         await new Promise(resolve => setTimeout(resolve, 3000));
         if (generation !== generationRef.current) return;
@@ -68,10 +70,6 @@ export function useVoiceControl() {
             } else {
               result = { success: false, message: 'ไม่มีข้อความที่จะพิมพ์' };
             }
-            break;
-
-          case 'move_mouse':
-            result = await moveMouse(intent.x ?? 960, intent.y ?? 540);
             break;
 
           case 'click_mouse':
@@ -98,33 +96,19 @@ export function useVoiceControl() {
             }
             break;
 
-          case 'visual_click':
-            setStatus('cv_analyzing', `กำลังตรวจจับตำแหน่งด้วย Computer Vision: "${intent.target_description}"`);
-            const coords = await locateVisualTarget(intent.target_description || '', settings);
-            if (coords) {
-              const moved = await moveMouse(coords.x, coords.y);
-              if (!moved.success) throw new Error(moved.message);
-              result = await clickMouse('left');
-              result.message = `[Computer Vision] คลิกที่ (${coords.x}, ${coords.y}) สำเร็จ`;
-            } else {
-              result = { success: false, message: 'ไม่พบตำแหน่งองค์ประกอบบนหน้าจอ' };
-              speakThai('ไม่พบตำแหน่งองค์ประกอบบนหน้าจอครับ');
-            }
-            break;
-
           default:
             result = {
               success: false,
               message: intent.validation_message || 'ไม่เข้าใจคำสั่งเสียงที่ได้รับ',
             };
-            speakThai('ไม่เข้าใจคำสั่งเสียงครับ');
+
         }
       } catch (err: any) {
         result = { success: false, message: err?.toString() || 'เกิดข้อผิดพลาดในการดำเนินการ' };
-        speakThai('เกิดข้อผิดพลาดในการทำงานครับ');
+
       }
 
-      speakThai(result.message);
+      if (settingsRef.current.voiceFeedback) speakThai(result.message);
       addHistoryItem(intent, result);
       setActiveIntent(null);
 
@@ -139,7 +123,7 @@ export function useVoiceControl() {
         setStatus('error', result.message);
       }
     },
-    [addHistoryItem, resetState, setActiveIntent, setStatus, settings]
+    [addHistoryItem, resetState, setActiveIntent, setStatus]
   );
 
   // Process raw speech text
@@ -154,7 +138,7 @@ export function useVoiceControl() {
 
       // Check Hotword filtering if enabled and not bypassed
       let commandText = speechText;
-      const hotwords = ['เฮ้ผู้ช่วยยาโบ', 'ผู้ช่วยยาโบ', 'ยาโบ', 'ผู้ช่วย', 'เฮ้ผู้ช่วย', 'เฮ้ ผู้ช่วย', 'เฮ้คอม', 'คอมพิวเตอร์'];
+      const hotwords = [settings.hotwordKeyword.trim()].filter(Boolean);
 
       if (!bypassHotword && settings.hotwordEnabled) {
         const speechLower = speechText.toLowerCase();
@@ -164,7 +148,7 @@ export function useVoiceControl() {
           const index = speechLower.indexOf(matchedHotword);
           commandText = speechText.substring(index + matchedHotword.length).trim();
         } else {
-          setStatus('idle', 'รอคำสั่งเสียง (เช่น พูด "ผู้ช่วยเปิด Chrome")');
+          setStatus('listening', `พูด “${settings.hotwordKeyword}” ตามด้วยคำสั่ง`);
           return;
         }
       }
@@ -174,13 +158,13 @@ export function useVoiceControl() {
         return;
       }
 
-      const intent = await parseSpeechToIntent(commandText, settings);
+      const intent = await parseSpeechToIntent(commandText);
       if (generation !== generationRef.current) return;
       setActiveIntent(intent);
 
-      if (intent.requires_validation || !settings.autoExecuteSafeIntents) {
+      if (intent.intent !== 'unknown' && (intent.requires_validation || !settings.autoExecuteSafeIntents)) {
         setStatus('awaiting_validation', intent.validation_message || 'โปรดยืนยันการดำเนินการ');
-        speakThai('โปรดยืนยันการทำงานในหน้าจอครับ');
+        if (settings.voiceFeedback) speakThai('โปรดยืนยันการทำงานในหน้าจอครับ');
       } else {
         await executeIntent(intent);
       }
@@ -191,8 +175,12 @@ export function useVoiceControl() {
     [executeIntent, setActiveIntent, setRecognizedSpeech, setStatus, settings]
   );
 
+  const processSpeechRef = useRef(processSpeech);
+  processSpeechRef.current = processSpeech;
+
   // Start Speech Recognition with Linux WebKitGTK fallback
   const startListening = useCallback(() => {
+    if (isListeningRef.current) return;
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognitionClass) {
@@ -212,7 +200,7 @@ export function useVoiceControl() {
         recognition.onstart = () => {
           isListeningRef.current = true;
           setStatus('listening', 'กำลังฟังคำสั่งเสียง (ภาษาไทย)...');
-          speakThai('ผู้ช่วยพร้อมรับคำสั่งเสียงแล้วครับ');
+          setIsListening(true);
         };
 
         recognition.onresult = (event: any) => {
@@ -224,18 +212,20 @@ export function useVoiceControl() {
           }
 
           if (finalTranscript.trim()) {
-            processSpeech(finalTranscript.trim(), false);
+            if (!window.speechSynthesis?.speaking) void processSpeechRef.current(finalTranscript.trim(), false);
           }
         };
 
         recognition.onerror = (event: any) => {
           console.warn('Speech Recognition error:', event.error);
           isListeningRef.current = false;
+          setIsListening(false);
           setStatus('error', `รับเสียงไม่ได้: ${event.error} — ตรวจสิทธิ์ไมโครโฟนหรือใช้ช่องพิมพ์คำสั่ง`);
         };
 
         recognition.onend = () => {
           isListeningRef.current = false;
+          setIsListening(false);
           if (useCommandStore.getState().status === 'listening') {
             setStatus('idle', 'หยุดรับคำสั่งเสียงแล้ว');
           }
@@ -251,7 +241,7 @@ export function useVoiceControl() {
       isListeningRef.current = false;
       setStatus('error', 'เริ่มรับเสียงไม่ได้ กรุณาใช้ช่องพิมพ์คำสั่ง');
     }
-  }, [processSpeech, setStatus, settings.language]);
+  }, [setStatus, settings.language]);
 
   // Stop Speech Recognition
   const stopListening = useCallback(() => {
@@ -264,8 +254,10 @@ export function useVoiceControl() {
     }
     generationRef.current += 1;
     isListeningRef.current = false;
-    setStatus('idle', 'พร้อมรับคำสั่งเสียง');
-  }, [setStatus]);
+    setIsListening(false);
+    window.speechSynthesis?.cancel();
+    resetState();
+  }, [resetState]);
 
   // Confirm pending validation intent
   const confirmPendingIntent = useCallback(() => {
@@ -289,19 +281,19 @@ export function useVoiceControl() {
   // Emergency Stop Keybind listener (Escape)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === (settings.emergencyStopKey || 'Escape')) {
+      if (e.key === 'Escape') {
         stopListening();
         resetState();
-        speakThai('หยุดการทำงานฉุกเฉินแล้วครับ');
+
         console.log('[Emergency Stop] Interrupted voice control loop.');
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [settings.emergencyStopKey, stopListening, resetState]);
+  }, [stopListening, resetState]);
 
   return {
-    isListening: status === 'listening',
+    isListening,
     status,
     startListening,
     stopListening,

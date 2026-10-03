@@ -1,30 +1,4 @@
 import type { CommandIntent } from '../types/intent';
-import type { UserSettings } from '../types/settings';
-
-
-const SYSTEM_PROMPT = `
-You are the AI Command Intent Engine for a Thai Voice Computer Control desktop system.
-Your job is to parse spoken Thai language commands into a strict JSON intent structure.
-
-Output MUST be a single JSON object with NO markdown, NO code block formatting, NO trailing text.
-
-JSON Schema:
-{
-  "intent": "keyboard_shortcut" | "type_text" | "move_mouse" | "click_mouse" | "scroll" | "launch_app_or_command" | "open_folder" | "visual_click" | "unknown",
-  "keys"?: string[],
-  "text"?: string,
-  "x"?: number,
-  "y"?: number,
-  "button"?: "left" | "right" | "middle",
-  "direction"?: "up" | "down",
-  "amount"?: number,
-  "command"?: string,
-  "path"?: string,
-  "target_description"?: string,
-  "requires_validation": boolean,
-  "validation_message"?: string
-}
-`;
 
 
 function normalizeThaiSpeech(speech: string): string {
@@ -38,6 +12,8 @@ function normalizeThaiSpeech(speech: string): string {
 export function parseLocalRuleIntent(rawSpeech: string): CommandIntent | null {
   const clean = normalizeThaiSpeech(rawSpeech);
   const id = 'intent-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
+
+  if (/^(อย่า|ไม่ต้อง|ห้าม)/.test(clean)) return null;
 
   // 1. Applications & Websites Launching
   if (clean.includes('เปิดโครม') || clean.includes('เปิด chrome') || clean.includes('เปิด google chrome')) {
@@ -96,7 +72,7 @@ export function parseLocalRuleIntent(rawSpeech: string): CommandIntent | null {
     return { id, rawSpeech, intent: 'keyboard_shortcut', keys: ['Control', 'f'], requires_validation: false, timestamp: Date.now() };
   }
   if (clean.includes('ปิดหน้าต่าง') || clean.includes('ปิดแอป')) {
-    return { id, rawSpeech, intent: 'keyboard_shortcut', keys: ['Alt', 'F4'], requires_validation: false, timestamp: Date.now() };
+    return { id, rawSpeech, intent: 'keyboard_shortcut', keys: ['Alt', 'F4'], requires_validation: true, timestamp: Date.now() };
   }
   if (clean.includes('กด enter') || clean.includes('กดเอนเตอร์') || clean.includes('ตกลง')) {
     return { id, rawSpeech, intent: 'keyboard_shortcut', keys: ['Enter'], requires_validation: false, timestamp: Date.now() };
@@ -118,34 +94,9 @@ export function parseLocalRuleIntent(rawSpeech: string): CommandIntent | null {
   if (clean.includes('คลิกขวา')) {
     return { id, rawSpeech, intent: 'click_mouse', button: 'right', requires_validation: false, timestamp: Date.now() };
   }
-  if (clean.includes('เมาส์ตรงกลาง') || clean.includes('ตรงกลางจอ')) {
-    return { id, rawSpeech, intent: 'move_mouse', x: 960, y: 540, requires_validation: false, timestamp: Date.now() };
-  }
-
-  // 6. High-Impact Destructive Actions
-  if (clean.includes('ลบไฟล์') || clean.includes('ปิดเครื่อง') || clean.includes('รีสตาร์ท')) {
-    return {
-      id,
-      rawSpeech,
-      intent: 'launch_app_or_command',
-      command: '',
-      requires_validation: true,
-      validation_message: `คุณแน่ใจหรือไม่ว่าต้องการให้ระบบดำเนินการ: "${rawSpeech}"?`,
-      timestamp: Date.now(),
-    };
-  }
-
-  // 7. Visual Click
-  if (clean.startsWith('คลิกปุ่ม') || clean.startsWith('คลิกที่')) {
-    const target = clean.replace(/^คลิกปุ่ม\s*|^คลิกที่\s*/i, '');
-    return {
-      id,
-      rawSpeech,
-      intent: 'visual_click',
-      target_description: target,
-      requires_validation: false,
-      timestamp: Date.now(),
-    };
+  if (/ลบไฟล์|ปิดเครื่อง|รีสตาร์ท|คลิกปุ่ม|คลิกที่|ตรงกลางจอ|เมาส์ตรงกลาง/.test(clean)) {
+    return { id, rawSpeech, intent: 'unknown', requires_validation: false,
+      validation_message: 'คำสั่งนี้ยังไม่รองรับ ใช้เปิดแอป คัดลอก วาง หรือเลื่อนหน้าจอได้', timestamp: Date.now() };
   }
 
   // Match any "เปิด [อะไรก็ตาม]" as generic app launch
@@ -164,71 +115,10 @@ export function parseLocalRuleIntent(rawSpeech: string): CommandIntent | null {
   return null;
 }
 
-export async function parseSpeechToIntent(
-  speech: string,
-  settings: UserSettings
-): Promise<CommandIntent> {
-  const id = 'intent-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
-
-  // First try the 100% Free Rule Engine
-  const localMatch = parseLocalRuleIntent(speech);
-  if (localMatch) return localMatch;
-
-  // If user provided an API key, use AI API for complex unhandled intents
-  if (settings.apiKey) {
-    try {
-      if (settings.aiProvider === 'gemini') {
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${settings.modelName || 'gemini-1.5-flash'}:generateContent?key=${settings.apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  role: 'user',
-                  parts: [{ text: SYSTEM_PROMPT }, { text: `Spoken Thai Command: "${speech}"` }],
-                },
-              ],
-              generationConfig: {
-                responseMimeType: 'application/json',
-                temperature: 0.1,
-              },
-            }),
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            const parsed = JSON.parse(text);
-            if (!parsed || typeof parsed !== 'object' || !['keyboard_shortcut','type_text','move_mouse','click_mouse','scroll','launch_app_or_command','open_folder','visual_click','unknown'].includes(parsed.intent)) throw new Error('Invalid intent');
-            // Remote model output must always be reviewed before execution.
-            return { ...parsed, id, rawSpeech: speech, timestamp: Date.now(), requires_validation: true };
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('API parsing failed:', err);
-    }
-  }
-
-  return {
-    id,
-    rawSpeech: speech,
-    intent: 'unknown',
-    requires_validation: false,
-    validation_message: `ไม่พบชุดคำสั่งระบบสำหรับ: "${speech}"`,
+export async function parseSpeechToIntent(speech: string): Promise<CommandIntent> {
+  return parseLocalRuleIntent(speech) ?? {
+    id: crypto.randomUUID(), rawSpeech: speech, intent: 'unknown', requires_validation: false,
+    validation_message: `ยังไม่รองรับคำสั่ง “${speech}” ลอง “เปิด youtube” หรือ “เปิดเครื่องคิดเลข”`,
     timestamp: Date.now(),
   };
-}
-
-// Computer Vision target locator
-export async function locateVisualTarget(
-  _targetDescription: string,
-  _settings: UserSettings
-): Promise<{ x: number; y: number } | null> {
-  // No visual inference provider is configured. Never guess click coordinates.
-  return null;
 }

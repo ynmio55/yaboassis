@@ -1,13 +1,4 @@
-use enigo::{Button, Coordinate, Direction, Enigo, Mouse, Settings};
-
-#[tauri::command]
-pub fn move_mouse(x: i32, y: i32) -> Result<String, String> {
-    let mut enigo = Enigo::new(&Settings::default()).map_err(|e| e.to_string())?;
-    enigo
-        .move_mouse(x, y, Coordinate::Abs)
-        .map_err(|e| e.to_string())?;
-    Ok(format!("ย้ายตำแหน่งเมาส์ไปที่ (X: {}, Y: {})", x, y))
-}
+use enigo::{Button, Direction, Enigo, Mouse, Settings};
 
 #[tauri::command]
 pub fn click_mouse(button: String) -> Result<String, String> {
@@ -15,7 +6,8 @@ pub fn click_mouse(button: String) -> Result<String, String> {
     let btn = match button.to_lowercase().as_str() {
         "right" => Button::Right,
         "middle" => Button::Middle,
-        _ => Button::Left,
+        "left" => Button::Left,
+        _ => return Err("ไม่รองรับปุ่มเมาส์".into()),
     };
 
     enigo.button(btn, Direction::Click).map_err(|e| e.to_string())?;
@@ -25,9 +17,11 @@ pub fn click_mouse(button: String) -> Result<String, String> {
 #[tauri::command]
 pub fn scroll_mouse(direction: String, amount: i32) -> Result<String, String> {
     let mut enigo = Enigo::new(&Settings::default()).map_err(|e| e.to_string())?;
+    if !(1..=100).contains(&amount) { return Err("จำนวนเลื่อนต้องอยู่ระหว่าง 1–100".into()); }
     let scroll_amount = match direction.to_lowercase().as_str() {
         "up" => -amount,
-        _ => amount,
+        "down" => amount,
+        _ => return Err("ทิศทางต้องเป็น up หรือ down".into()),
     };
 
     enigo

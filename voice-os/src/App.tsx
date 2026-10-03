@@ -13,7 +13,7 @@ export default function App() {
   const voice = useVoiceControl();
   const { history, clearHistory, statusMessage, status } = useCommandStore();
   const desktop = isTauriAvailable();
-  const busy = ['processing_intent', 'executing', 'cv_analyzing', 'awaiting_validation'].includes(status);
+  const busy = ['processing_intent', 'executing', 'awaiting_validation'].includes(status);
   const submit = async (command: string) => {
     if (!command.trim() || busy) return;
     setText('');
@@ -36,7 +36,7 @@ export default function App() {
       <main className="main-area">
         <header className="topbar"><div><span className="eyebrow">YABO / WORKSPACE</span><h1>ศูนย์คำสั่ง</h1></div><button className="icon-button glass" aria-label="ตั้งค่า" onClick={() => setSettingsOpen(true)}><Settings size={20}/></button></header>
         <section className="assistant glass">
-          <div className="assistant-top"><span className="pill"><i className={voice.isListening ? 'live' : ''}/>{voice.isListening ? 'กำลังรับเสียง' : 'พร้อมเมื่อคุณต้องการ'}</span><span className="key-hint">Esc เพื่อหยุดรับเสียง</span></div>
+          <div className="assistant-top"><span className="pill"><i className={voice.isListening ? 'live' : ''}/>{voice.isListening ? 'กำลังรับเสียง' : 'พร้อมเมื่อคุณต้องการ'}</span><span className="key-hint">Esc เพื่อหยุด / ยกเลิก</span></div>
           <div className="intro"><div className={`voice-symbol ${voice.isListening ? 'listening' : ''}`} aria-hidden="true">{[18,32,48,26,42].map((h,i)=><span key={i} style={{height:h}}/>)}</div><h2>วันนี้ให้ช่วยอะไรดี?</h2><p>เปิดแอป เข้าถึงไฟล์ และทำงานด้วยคำสั่งสั้น ๆ<br/>พูดภาษาไทย หรือพิมพ์สิ่งที่ต้องการด้านล่าง</p></div>
           <form className="composer" onSubmit={e=>{e.preventDefault();void submit(text);}}><input aria-label="คำสั่ง" placeholder="ลองพิมพ์ “เปิด youtube”" value={text} onChange={e=>setText(e.target.value)} maxLength={2000} disabled={busy}/><button type="button" aria-label={voice.isListening ? 'หยุดรับเสียง' : 'เริ่มรับเสียง'} className={voice.isListening ? 'mic active' : 'mic'} onClick={()=>voice.isListening ? voice.stopListening() : voice.startListening()} disabled={busy}>{voice.isListening ? <MicOff size={20}/> : <Mic size={20}/>}</button><button className="send" aria-label="ส่งคำสั่ง" disabled={!text.trim() || busy}><ArrowUp size={20}/></button></form>
           <div className={`status-line ${status==='error' ? 'error' : ''}`} role="status" aria-live="polite">{status==='error' ? <AlertCircle size={15}/> : <Square size={12}/>} {statusMessage}</div>

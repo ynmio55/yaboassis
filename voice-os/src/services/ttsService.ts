@@ -1,4 +1,4 @@
-// 100% Free Offline Thai Text-to-Speech (TTS) Voice Feedback
+// Speech output uses voices installed or provided by the host system.
 
 export function speakThai(text: string) {
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {

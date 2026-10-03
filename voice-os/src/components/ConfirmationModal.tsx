@@ -25,14 +25,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             <ShieldAlert className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">คำเตือน: คำสั่งที่มีความเสี่ยงสูง</h3>
-            <p className="text-xs text-amber-400 font-medium">โปรดยืนยันก่อนให้ระบบดำเนินการบน Desktop OS</p>
+            <h3 className="text-lg font-bold text-white">ยืนยันคำสั่ง</h3>
+            <p className="text-xs text-amber-400 font-medium">ตรวจคำสั่งก่อนให้ผู้ช่วยทำงาน</p>
           </div>
         </div>
 
         {/* Message Body */}
         <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 mb-6 space-y-2">
-          <div className="text-xs text-slate-400">คำสั่งเสียงภาษาไทยที่ตรวจพบ:</div>
+          <div className="text-xs text-slate-400">คำสั่งที่ได้รับ:</div>
           <div className="text-base font-semibold text-white">"{activeIntent.rawSpeech}"</div>
 
           <div className="pt-2 border-t border-slate-800 text-xs text-slate-300">

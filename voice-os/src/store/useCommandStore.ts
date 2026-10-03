@@ -7,7 +7,6 @@ export type VoiceState =
   | 'processing_intent'
   | 'awaiting_validation'
   | 'executing'
-  | 'cv_analyzing'
   | 'success'
   | 'error';
 
