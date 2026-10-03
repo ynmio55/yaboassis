@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "voice-os",
-  "version": "0.1.0",
+  "productName": "Yabo Assistant",
+  "version": "0.2.0",
   "identifier": "com.voiceos.app",
   "build": {
     "frontendDist": "../dist",
@@ -12,11 +12,13 @@
   "app": {
     "windows": [
       {
-        "title": "Voice Computer Control",
-        "width": 800,
-        "height": 600,
+        "title": "Yabo Assistant",
+        "width": 1200,
+        "height": 850,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "minWidth": 420,
+        "minHeight": 600
       }
     ],
     "security": {

@@ -1,6 +1,6 @@
 import type { CommandIntent } from '../types/intent';
 import type { UserSettings } from '../types/settings';
-import { takeScreenshot } from './tauriBridge';
+
 
 const SYSTEM_PROMPT = `
 You are the AI Command Intent Engine for a Thai Voice Computer Control desktop system.
@@ -53,13 +53,13 @@ export function parseLocalRuleIntent(rawSpeech: string): CommandIntent | null {
     return { id, rawSpeech, intent: 'launch_app_or_command', command: 'code', requires_validation: false, timestamp: Date.now() };
   }
   if (clean.includes('เปิด youtube') || clean.includes('เปิด ยูทูป')) {
-    return { id, rawSpeech, intent: 'launch_app_or_command', command: 'google-chrome https://youtube.com', requires_validation: false, timestamp: Date.now() };
+    return { id, rawSpeech, intent: 'launch_app_or_command', command: 'https://youtube.com', requires_validation: false, timestamp: Date.now() };
   }
   if (clean.includes('เปิด facebook') || clean.includes('เปิด เฟสบุ๊ค') || clean.includes('เปิด เฟส')) {
-    return { id, rawSpeech, intent: 'launch_app_or_command', command: 'google-chrome https://facebook.com', requires_validation: false, timestamp: Date.now() };
+    return { id, rawSpeech, intent: 'launch_app_or_command', command: 'https://facebook.com', requires_validation: false, timestamp: Date.now() };
   }
   if (clean.includes('เปิด google') || clean.includes('เปิด กูเกิล')) {
-    return { id, rawSpeech, intent: 'launch_app_or_command', command: 'google-chrome https://google.com', requires_validation: false, timestamp: Date.now() };
+    return { id, rawSpeech, intent: 'launch_app_or_command', command: 'https://google.com', requires_validation: false, timestamp: Date.now() };
   }
 
   // 2. Folder Navigation
@@ -72,8 +72,8 @@ export function parseLocalRuleIntent(rawSpeech: string): CommandIntent | null {
 
   // 3. Typing Simulation
   if (clean.startsWith('พิมพ์ว่า ') || clean.startsWith('พิมพ์ ')) {
-    const textToType = clean.replace(/^พิมพ์ว่า\s*|^พิมพ์\s*/i, '');
-    return { id, rawSpeech, intent: 'type_text', text: textToType, requires_validation: false, timestamp: Date.now() };
+
+    return { id, rawSpeech, intent: 'type_text', text: rawSpeech.replace(/^(?:.*?พิมพ์ว่า|.*?พิมพ์)\s*/, ''), requires_validation: true, timestamp: Date.now() };
   }
 
   // 4. Keyboard Shortcuts
@@ -128,7 +128,7 @@ export function parseLocalRuleIntent(rawSpeech: string): CommandIntent | null {
       id,
       rawSpeech,
       intent: 'launch_app_or_command',
-      command: clean.includes('ปิดเครื่อง') ? 'shutdown -h now' : 'delete_file',
+      command: '',
       requires_validation: true,
       validation_message: `คุณแน่ใจหรือไม่ว่าต้องการให้ระบบดำเนินการ: "${rawSpeech}"?`,
       timestamp: Date.now(),
@@ -203,7 +203,9 @@ export async function parseSpeechToIntent(
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (text) {
             const parsed = JSON.parse(text);
-            return { id, rawSpeech: speech, timestamp: Date.now(), ...parsed };
+            if (!parsed || typeof parsed !== 'object' || !['keyboard_shortcut','type_text','move_mouse','click_mouse','scroll','launch_app_or_command','open_folder','visual_click','unknown'].includes(parsed.intent)) throw new Error('Invalid intent');
+            // Remote model output must always be reviewed before execution.
+            return { ...parsed, id, rawSpeech: speech, timestamp: Date.now(), requires_validation: true };
           }
         }
       }
@@ -227,11 +229,6 @@ export async function locateVisualTarget(
   _targetDescription: string,
   _settings: UserSettings
 ): Promise<{ x: number; y: number } | null> {
-  try {
-    await takeScreenshot();
-  } catch (err) {
-    console.error('Screenshot failed:', err);
-  }
-  // Default screen center coordinates for free offline mode
-  return { x: 960, y: 540 };
+  // No visual inference provider is configured. Never guess click coordinates.
+  return null;
 }

@@ -30,6 +30,8 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'voice-os-settings-v1',
+      partialize: ({ apiKey: _apiKey, ...settings }) => settings,
+      merge: (saved, current) => ({ ...current, ...(saved as Partial<SettingsState>), apiKey: '' }),
     }
   )
 );

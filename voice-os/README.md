@@ -1,32 +1,41 @@
-# React + TypeScript + Vite
+# Yabo Assistant
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+ผู้ช่วยควบคุมคอมพิวเตอร์ภาษาไทย ใช้ React + Tauri พร้อม Liquid Glass UI
 
-Currently, two official plugins are available:
+## ใช้งาน
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- พิมพ์คำสั่งหรือกดไมโครโฟน เช่น `เปิด youtube`, `เปิดดาวน์โหลด`, `เปิดเครื่องคิดเลข`, `คัดลอก`, `เลื่อนลง`, `พิมพ์ว่า สวัสดี`
+- คำสั่งพื้นฐานไม่ต้องใช้ API key การรู้จำเสียงใช้ Web Speech API และอาจต้องเชื่อมต่ออินเทอร์เน็ต หาก WebView ไม่รองรับ แอปจะแจ้งให้ใช้ช่องพิมพ์
+- คำสั่งคีย์บอร์ด/เมาส์รอ 3 วินาที ให้สลับไปหน้าต่างเป้าหมายก่อนทำงาน กด Esc ขณะอยู่ใน Yabo เพื่อยกเลิกงานที่กำลังรอ (ยังไม่ใช่ global hotkey)
+- การพิมพ์ข้อความต้องยืนยันก่อน หากไม่ต้องการให้คำสั่งอื่นทำงานทันที ปิด auto-execute ใน Settings
+- โหมดเบราว์เซอร์ไม่สามารถควบคุมเครื่องและจะแสดงข้อผิดพลาดจริง ไม่จำลองว่าทำสำเร็จ
+- การค้นหาปุ่มด้วยภาพยังไม่พร้อมใช้งาน จึงไม่คลิกตำแหน่งที่เดาเอง ไม่รองรับลบไฟล์/ปิดเครื่อง/รีสตาร์ทในรุ่นนี้
+- API key ใช้เฉพาะ session และไม่บันทึกลง localStorage
 
-## React Compiler
+## ตัวติดตั้ง
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+GitHub Actions `Build desktop installers` สร้าง Windows `.exe`/`.msi` และ Linux `.deb`/`.AppImage` โดยอัตโนมัติเมื่อ push main, เปิด PR หรือสั่ง workflow_dispatch
+ดาวน์โหลด ZIP ใน Artifacts ของ run ที่ผ่าน จากนั้นแตกไฟล์และเปิดตัวติดตั้ง ระบบนี้ไม่ได้เผยแพร่ GitHub Release อัตโนมัติ
 
-## Expanding the Oxlint configuration
+Windows: ติดตั้งไฟล์ `.exe` (ต้องมี WebView2 ซึ่งตัวติดตั้ง Tauri จัดการ)
+Linux: ใช้ `.deb` สำหรับ Debian/Ubuntu หรือ `.AppImage`; Fedora อาจต้องติดตั้ง WebKitGTK 4.1 และ dependency ของระบบ
+การควบคุมเมาส์/คีย์บอร์ดและ screenshot บน Wayland มีข้อจำกัด ควรทดสอบใน X11 ก่อน
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## พัฒนาบนเครื่อง
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+ติดตั้ง Node.js 22+, Rust stable และ Tauri v2 system prerequisites
+Windows ต้องมี Visual Studio C++ Build Tools และ WebView2
+Ubuntu: `sudo apt install libwebkit2gtk-4.1-dev build-essential libssl-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libxcb1-dev libxrandr-dev libdbus-1-dev`
+
+```sh
+cd voice-os
+npm ci
+npm run desktop:dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Build ตัวติดตั้ง: `npm run desktop:build`
+ตรวจ frontend: `npm run build` และ `npm run lint`
+
+## สถานะตรวจสอบ
+
+Frontend build และ lint ผ่านในสภาพแวดล้อมพัฒนา การติดตั้งจริง, native input, microphone และ desktop packaging ต้องตรวจจาก Actions และเครื่อง Windows/Linux เป้าหมาย ไม่ควรถือว่า frontend build เป็นหลักฐานว่า native ทุกฟังก์ชันผ่านแล้ว

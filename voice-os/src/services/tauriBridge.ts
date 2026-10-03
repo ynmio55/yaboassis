@@ -9,7 +9,7 @@ export const isTauriAvailable = (): boolean => {
 export const executeKeyboardShortcut = async (keys: string[]): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
     console.log('[Browser Mock] executeKeyboardShortcut:', keys);
-    return { success: true, message: `[Mock] กดปุ่ม: ${keys.join(' + ')}` };
+    return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: กดปุ่ม: ${keys.join(' + ')}` };
   }
   try {
     const res = await invoke<string>('execute_keyboard_shortcut', { keys });
@@ -22,7 +22,7 @@ export const executeKeyboardShortcut = async (keys: string[]): Promise<Execution
 export const typeText = async (text: string): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
     console.log('[Browser Mock] typeText:', text);
-    return { success: true, message: `[Mock] พิมพ์ข้อความ: "${text}"` };
+    return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: พิมพ์ข้อความ: "${text}"` };
   }
   try {
     const res = await invoke<string>('type_text', { text });
@@ -35,7 +35,7 @@ export const typeText = async (text: string): Promise<ExecutionResult> => {
 export const moveMouse = async (x: number, y: number): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
     console.log('[Browser Mock] moveMouse:', x, y);
-    return { success: true, message: `[Mock] ย้ายเมาส์ไปที่ X: ${x}, Y: ${y}` };
+    return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: ย้ายเมาส์ไปที่ X: ${x}, Y: ${y}` };
   }
   try {
     const res = await invoke<string>('move_mouse', { x, y });
@@ -48,7 +48,7 @@ export const moveMouse = async (x: number, y: number): Promise<ExecutionResult> 
 export const clickMouse = async (button: string = 'left'): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
     console.log('[Browser Mock] clickMouse:', button);
-    return { success: true, message: `[Mock] คลิกเมาส์ (${button})` };
+    return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: คลิกเมาส์ (${button})` };
   }
   try {
     const res = await invoke<string>('click_mouse', { button });
@@ -61,7 +61,7 @@ export const clickMouse = async (button: string = 'left'): Promise<ExecutionResu
 export const scrollMouse = async (direction: string = 'down', amount: number = 5): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
     console.log('[Browser Mock] scrollMouse:', direction, amount);
-    return { success: true, message: `[Mock] เลื่อนหน้าจอ ${direction} (${amount})` };
+    return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: เลื่อนหน้าจอ ${direction} (${amount})` };
   }
   try {
     const res = await invoke<string>('scroll_mouse', { direction, amount });
@@ -74,7 +74,7 @@ export const scrollMouse = async (direction: string = 'down', amount: number = 5
 export const launchApplication = async (command: string): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
     console.log('[Browser Mock] launchApplication:', command);
-    return { success: true, message: `[Mock] เปิดแอปพลิเคชัน: ${command}` };
+    return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: เปิดแอปพลิเคชัน: ${command}` };
   }
   try {
     const res = await invoke<string>('launch_application', { nameOrPath: command });
@@ -87,7 +87,7 @@ export const launchApplication = async (command: string): Promise<ExecutionResul
 export const openFolder = async (path: string): Promise<ExecutionResult> => {
   if (!isTauriAvailable()) {
     console.log('[Browser Mock] openFolder:', path);
-    return { success: true, message: `[Mock] เปิดโฟลเดอร์: ${path}` };
+    return { success: false, message: `ต้องใช้แอปเดสก์ท็อป: เปิดโฟลเดอร์: ${path}` };
   }
   try {
     const res = await invoke<string>('open_folder', { path });
@@ -100,19 +100,7 @@ export const openFolder = async (path: string): Promise<ExecutionResult> => {
 export const takeScreenshot = async (): Promise<string> => {
   if (!isTauriAvailable()) {
     console.log('[Browser Mock] takeScreenshot requested');
-    // Canvas dummy screenshot for browser mode preview
-    const canvas = document.createElement('canvas');
-    canvas.width = 1920;
-    canvas.height = 1080;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = '#1e1e2e';
-      ctx.fillRect(0, 0, 1920, 1080);
-      ctx.fillStyle = '#6c7086';
-      ctx.font = '30px sans-serif';
-      ctx.fillText('Mock Screenshot Mode', 100, 100);
-    }
-    return canvas.toDataURL('image/png').split(',')[1];
+    throw new Error('ภาพหน้าจอต้องใช้แอปเดสก์ท็อป');
   }
   try {
     const base64Image = await invoke<string>('take_screenshot');
