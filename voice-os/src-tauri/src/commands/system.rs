@@ -18,7 +18,8 @@ pub fn launch_application(name_or_path: String) -> Result<String, String> {
     // must never authorize launching arbitrary desktop executables.
     if !matches!(normalized.as_str(),
         "google-chrome" | "chrome" | "gnome-terminal" | "terminal" |
-        "gnome-calculator" | "calculator" | "code" | "vscode") {
+        "gnome-calculator" | "calculator" | "code" | "vscode" |
+        "firefox" | "file-manager") {
         return Err("ยังไม่อนุญาตให้เปิดโปรแกรมนี้จากคำสั่งเสียง".into());
     }
     #[cfg(target_os = "windows")]
@@ -27,6 +28,8 @@ pub fn launch_application(name_or_path: String) -> Result<String, String> {
         "terminal" | "gnome-terminal" => vec!["wt", "cmd"],
         "calculator" | "gnome-calculator" => vec!["calc"],
         "code" | "vscode" => vec!["code"],
+        "firefox" => vec!["firefox"],
+        "file-manager" => vec!["explorer"],
         _ => vec![name_or_path.as_str()],
     };
     #[cfg(not(target_os = "windows"))]
@@ -35,6 +38,8 @@ pub fn launch_application(name_or_path: String) -> Result<String, String> {
         "terminal" | "gnome-terminal" => vec!["gnome-terminal", "konsole", "xterm"],
         "calculator" | "gnome-calculator" => vec!["gnome-calculator", "kcalc"],
         "code" | "vscode" => vec!["code", "codium"],
+        "firefox" => vec!["firefox"],
+        "file-manager" => vec!["nautilus", "dolphin", "thunar", "pcmanfm"],
         _ => vec![name_or_path.as_str()],
     };
     for cmd in candidates {
