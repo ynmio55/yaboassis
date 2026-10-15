@@ -1,3 +1,5 @@
+import { invoke } from '@tauri-apps/api/core';
+import { isTauriAvailable } from '../services/tauriBridge';
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useCommandStore } from '../store/useCommandStore';
@@ -184,9 +186,32 @@ export function useVoiceControl() {
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognitionClass) {
-      // Fallback for Linux WebKitGTK Desktop Webview
-      isListeningRef.current = false;
-      setStatus('error', 'เครื่องนี้ยังไม่รองรับการรู้จำเสียง ใช้ช่องพิมพ์คำสั่งด้านล่างได้');
+      // Fedora/Wayland WebKitGTK has no browser SpeechRecognition. Use native
+      // offline Whisper when running in the Tauri Linux desktop application.
+      if (isTauriAvailable() && /Linux/i.test(navigator.userAgent)) {
+        isListeningRef.current = true;
+        setIsListening(true);
+        const generation = ++generationRef.current;
+        setStatus('listening', 'กำลังบันทึกเสียงภาษาไทย 5 วินาที (ประมวลผลในเครื่อง)...');
+        void invoke<string>('recognize_thai_linux')
+          .then((speech) => {
+            if (generation === generationRef.current) {
+              setStatus('processing_intent', 'กำลังประมวลผลคำสั่งเสียง...');
+              void processSpeechRef.current(speech, false);
+            }
+          })
+          .catch((error: unknown) => {
+            if (generation === generationRef.current) setStatus('error', String(error));
+          })
+          .finally(() => {
+            if (generation === generationRef.current) {
+              isListeningRef.current = false;
+              setIsListening(false);
+            }
+          });
+        return;
+      }
+      setStatus('error', 'WebView นี้ไม่รองรับเสียง: บน Fedora ให้เปิด Yabo Desktop และติดตั้ง whisper-cli');
       return;
     }
 
