@@ -4,12 +4,23 @@ use std::process::Command;
 pub fn launch_application(name_or_path: String) -> Result<String, String> {
     // 1. Web URLs
     if name_or_path.starts_with("http://") || name_or_path.starts_with("https://") {
+        if !matches!(name_or_path.as_str(),
+            "https://youtube.com" | "https://facebook.com" | "https://google.com") {
+            return Err("ยังไม่รองรับการเปิด URL นี้จากคำสั่งเสียง".into());
+        }
         open::that(&name_or_path).map_err(|e| format!("ไม่สามารถเปิดลิงก์ได้: {}", e))?;
         return Ok(format!("เปิดเว็บไซต์: {}", name_or_path));
     }
 
     // Launch executable names with no shell, arguments or script expansion.
     let normalized = name_or_path.to_lowercase();
+    // Enforce the same allowlist at the native boundary. UI validation alone
+    // must never authorize launching arbitrary desktop executables.
+    if !matches!(normalized.as_str(),
+        "google-chrome" | "chrome" | "gnome-terminal" | "terminal" |
+        "gnome-calculator" | "calculator" | "code" | "vscode") {
+        return Err("ยังไม่อนุญาตให้เปิดโปรแกรมนี้จากคำสั่งเสียง".into());
+    }
     #[cfg(target_os = "windows")]
     let candidates = match normalized.as_str() {
         "google-chrome" | "chrome" => vec!["chrome", "msedge"],
