@@ -25,6 +25,25 @@
 - ตั้งค่าคำเรียกได้ เช่น `ยาโบ` ใช้เฉพาะตอนเปิดไมค์แล้ว ไม่มี always-on wake word หรือการสนทนาอิสระ
 - ลบตัวเลือก OpenAI/Ollama/Cloud Speech และ theme ที่ไม่มีระบบรองรับออกแล้ว
 
+## Fedora: เปิดใช้ไมโครโฟนภาษาไทยแบบ Offline
+
+แอป Tauri บน Fedora/WebKitGTK ไม่รองรับ Web Speech API เสมอไป รุ่นทดลองนี้จึงเพิ่มทางเลือก **whisper.cpp** ประมวลผลเสียงภายในเครื่องโดยไม่ใช้ API key และไม่ส่งไฟล์เสียงขึ้น Cloud
+
+รันคำสั่งครั้งแรกจากโฟลเดอร์ `voice-os`:
+
+```bash
+bash scripts/setup-fedora-voice.sh
+npm run desktop:dev
+```
+
+สคริปต์จะติดตั้ง ffmpeg และเครื่องมือ Build ด้วย dnf, ดึงซอร์ส whisper.cpp, สร้าง `~/.local/bin/whisper-cli` และดาวน์โหลดโมเดล `~/.local/share/yabo/ggml-base.bin` (~148 MB) ต้องเชื่อมต่ออินเทอร์เน็ตครั้งแรกและใช้พื้นที่ดิสก์เพียงพอ จากนั้นใช้งาน Offline ได้
+
+กดปุ่มไมโครโฟน **หนึ่งครั้ง แล้วพูดคำสั่งภายใน 5 วินาที** ระบบจะบันทึกเสียงผ่าน PulseAudio/PipeWire แปลงเป็นข้อความภาษาไทยด้วยโมเดลภายในเครื่องและประมวลผลตามคำสั่งเดิม กดหยุดจะยกเลิกการนำผลเสียงไปสั่งงาน แต่การบันทึก 5 วินาทีที่เริ่มแล้วจะสิ้นสุดเอง
+
+ถ้าอุปกรณ์บันทึกเสียงไม่ทำงาน ให้ตรวจ GNOME Settings → Sound → Input แล้วทดลอง `ffmpeg -f pulse -i default -t 3 -ac 1 -ar 16000 /tmp/yabo-mic-test.wav`
+
+โมเดลและตัวแปลงเสียงเปลี่ยนตำแหน่งได้ด้วย `YABO_WHISPER_MODEL` และ `YABO_WHISPER_BIN` ข้อจำกัด: เป็นการกดเพื่อพูดทีละ 5 วินาที ไม่ใช่การฟังคำเรียกตลอดเวลา; CPU ที่ช้าอาจประมวลผลเสียงหลายวินาที การควบคุมเมาส์และคีย์บอร์ดภายใต้ Wayland ยังมีข้อจำกัดแยกต่างหาก
+
 ## ตัวติดตั้ง
 
 GitHub Actions `Build desktop installers` สร้าง Windows `.exe`/`.msi` และ Linux `.deb`/`.AppImage` โดยอัตโนมัติเมื่อ push main, เปิด PR หรือสั่ง workflow_dispatch
