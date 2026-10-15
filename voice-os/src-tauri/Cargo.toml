@@ -23,3 +23,5 @@ tauri = { version = "2.11.3", features = [] }
 tauri-plugin-log = "2"
 enigo = "0.3"
 open = "5.3"
+
+tempfile = "3"
