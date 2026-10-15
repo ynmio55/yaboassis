@@ -41,7 +41,11 @@ fn recognize_local() -> Result<String, String> {
         return Err(format!("บันทึกเสียงไม่สำเร็จ: {}", String::from_utf8_lossy(&captured.stderr).trim()));
     }
     let prefix = dir.path().join("recognized");
-    let recognition = Command::new("whisper-cli")
+    let whisper = env::var_os("YABO_WHISPER_BIN").map(PathBuf::from)
+        .or_else(|| env::var_os("HOME").map(|h| PathBuf::from(h).join(".local/bin/whisper-cli"))
+            .filter(|p| p.is_file()))
+        .unwrap_or_else(|| PathBuf::from("whisper-cli"));
+    let recognition = Command::new(whisper)
         .arg("-m").arg(&model)
         .arg("-f").arg(&wav)
         .args(["-l", "th", "-nt", "-otxt", "-of"])
