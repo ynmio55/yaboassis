@@ -23,6 +23,12 @@ export function parseLocalRuleIntent(rawSpeech: string): CommandIntent | null {
   if (clean.includes('เปิดโครม') || clean.includes('เปิด chrome') || clean.includes('เปิด google chrome')) {
     return { id, rawSpeech, intent: 'launch_app_or_command', command: 'google-chrome', requires_validation: false, timestamp: Date.now() };
   }
+  if (clean.includes('เปิด firefox') || clean.includes('เปิดไฟร์ฟอกซ์') || clean.includes('เปิดไฟร์ฟ็อกซ์')) {
+    return { id, rawSpeech, intent: 'launch_app_or_command', command: 'firefox', requires_validation: false, timestamp: Date.now() };
+  }
+  if (clean.includes('เปิดไฟล์แมนเนเจอร์') || clean.includes('เปิด file manager') || clean.includes('เปิดตัวจัดการไฟล์')) {
+    return { id, rawSpeech, intent: 'launch_app_or_command', command: 'file-manager', requires_validation: false, timestamp: Date.now() };
+  }
   if (clean.includes('เปิดเทอร์มินัล') || clean.includes('เปิด terminal') || clean.includes('เปิด คอนโซล')) {
     return { id, rawSpeech, intent: 'launch_app_or_command', command: 'gnome-terminal', requires_validation: false, timestamp: Date.now() };
   }
