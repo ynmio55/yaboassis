@@ -14,6 +14,10 @@ export function parseLocalRuleIntent(rawSpeech: string): CommandIntent | null {
   const id = 'intent-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
 
   if (/^(อย่า|ไม่ต้อง|ห้าม)/.test(clean)) return null;
+  if (/(ลบไฟล์|ปิดเครื่อง|รีสตาร์ท|คลิกปุ่ม|คลิกที่|ตรงกลางจอ|เมาส์ตรงกลาง)/.test(clean)) {
+    return { id, rawSpeech, intent: 'unknown', requires_validation: false,
+      validation_message: 'คำสั่งนี้ยังไม่รองรับ', timestamp: Date.now() };
+  }
 
   // 1. Applications & Websites Launching
   if (clean.includes('เปิดโครม') || clean.includes('เปิด chrome') || clean.includes('เปิด google chrome')) {
@@ -99,15 +103,16 @@ export function parseLocalRuleIntent(rawSpeech: string): CommandIntent | null {
       validation_message: 'คำสั่งนี้ยังไม่รองรับ ใช้เปิดแอป คัดลอก วาง หรือเลื่อนหน้าจอได้', timestamp: Date.now() };
   }
 
-  // Match any "เปิด [อะไรก็ตาม]" as generic app launch
-  if (clean.startsWith('เปิด ')) {
-    const appToOpen = clean.replace(/^เปิด\s*/i, '');
+  // Never execute an arbitrary executable based on a speech-recognition guess.
+  // The native command runner does not use a shell, but an untrusted program
+  // name can still launch programs with harmful side effects.
+  if (/^เปิด\s+/.test(clean)) {
     return {
       id,
       rawSpeech,
-      intent: 'launch_app_or_command',
-      command: appToOpen,
+      intent: 'unknown',
       requires_validation: false,
+      validation_message: 'ยังไม่รองรับการเปิดโปรแกรมนี้ รองรับ Chrome, Terminal, เครื่องคิดเลข, VS Code, YouTube, Facebook และ Google',
       timestamp: Date.now(),
     };
   }
