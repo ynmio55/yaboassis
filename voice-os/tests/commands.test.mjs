@@ -17,3 +17,16 @@ test('typing and closing windows require review',()=>{
 });
 for (const speech of ['คลิกปุ่มส่ง','ปิดเครื่อง','ลบไฟล์','ตรงกลางจอ','อย่าคัดลอก','ไม่ต้องเปิด youtube','เล่าเรื่องให้ฟัง'])
   test(`unsupported: ${speech}`,async()=>assert.equal((await parseSpeechToIntent(speech)).intent,'unknown'));
+
+test('unknown program names never become arbitrary executables', async () => {
+  for (const speech of ['เปิด python', 'เปิด bash', 'เปิด rm', 'เปิด โปรแกรมไม่รู้จัก']) {
+    const result = await parseSpeechToIntent(speech);
+    assert.equal(result.intent, 'unknown', speech);
+  }
+});
+test('unsafe action takes precedence over keywords for safe actions', async () => {
+  for (const speech of ['เปิด youtube แล้วปิดเครื่อง', 'ลบไฟล์ แล้วเปิด google', 'คลิกปุ่มส่ง แล้วเปิด chrome']) {
+    const result = await parseSpeechToIntent(speech);
+    assert.equal(result.intent, 'unknown', speech);
+  }
+});
