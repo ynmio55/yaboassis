@@ -4,6 +4,7 @@ use commands::{
     keyboard::{execute_keyboard_shortcut, type_text},
     mouse::{click_mouse, scroll_mouse},
     system::{launch_application, open_folder},
+    speech::recognize_thai_linux,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -25,7 +26,8 @@ pub fn run() {
             click_mouse,
             scroll_mouse,
             launch_application,
-            open_folder
+            open_folder,
+            recognize_thai_linux
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
