@@ -4,6 +4,9 @@ import { parseLocalRuleIntent, parseSpeechToIntent } from '../src/services/aiEng
 for (const [speech, field, expected] of [
   ['เปิด youtube','command','https://youtube.com'],
   ['เปิด facebook','command','https://facebook.com'],
+  ['เปิด firefox','command','firefox'],
+  ['เปิดไฟร์ฟอกซ์','command','firefox'],
+  ['เปิดตัวจัดการไฟล์','command','file-manager'],
   ['ยาโบ เปิด youtube','command','https://youtube.com'],
   ['เปิดดาวน์โหลด','path','~/Downloads'],
   ['คัดลอก','intent','keyboard_shortcut'],
